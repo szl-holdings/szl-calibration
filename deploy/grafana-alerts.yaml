@@ -1,0 +1,24 @@
+# PrometheusRule-compatible alerts for the szl-calibration plane.
+groups:
+  - name: szl-calibration
+    rules:
+      - alert: SzCalibrationHighP95Latency
+        expr: histogram_quantile(0.95, rate(szl_calibration_request_seconds_bucket[5m])) > 0.25
+        for: 10m
+        labels: {severity: warning, plane: calibration}
+        annotations: {summary: "p95 latency above 250ms for 10m"}
+      - alert: SzCalibrationEceDrift
+        expr: histogram_quantile(0.5, rate(szl_calibration_ece_bucket[1h])) > 0.05
+        for: 1h
+        labels: {severity: warning, plane: calibration}
+        annotations: {summary: "median batch ECE above 0.05 over 1h"}
+      - alert: SzCalibrationReceiptChainBroken
+        expr: szl_calibration_chain_valid == 0
+        for: 0m
+        labels: {severity: critical, plane: calibration}
+        annotations: {summary: "receipt hash chain failed verification - fail closed"}
+      - alert: SzCalibrationMemoryHigh
+        expr: process_resident_memory_bytes{job="szl-calibration"} > 1.5e9
+        for: 15m
+        labels: {severity: warning, plane: calibration}
+        annotations: {summary: "resident memory above 1.5GiB - check limit_max_requests recycling"}
