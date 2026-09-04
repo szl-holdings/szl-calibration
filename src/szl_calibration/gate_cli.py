@@ -16,11 +16,12 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     rep = validate_safetensors(args.path)
     print(rep.to_json())
-    code = EXIT[rep.verdict]
-    if args.expect and args.expect != rep.verdict:
-        print(f"GATE MISMATCH: expected {args.expect}, got {rep.verdict}", file=sys.stderr)
-        return 3
-    return code
+    if args.expect:
+        if args.expect != rep.verdict:
+            print(f"GATE MISMATCH: expected {args.expect}, got {rep.verdict}", file=sys.stderr)
+            return 3
+        return 0
+    return EXIT[rep.verdict]
 
 
 if __name__ == "__main__":
