@@ -8,7 +8,7 @@ import logging
 import time
 import uuid
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import PlainTextResponse
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from pydantic import BaseModel, Field
@@ -59,8 +59,13 @@ def prom():
     return PlainTextResponse(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
+@app.post("/v1/score")
 @app.post("/v1/calibration/score")
 def score(req: ScoreRequest):
+    try:
+        M._validate(req.probabilities, req.labels)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     out = {
         "ece": M.expected_calibration_error(req.probabilities, req.labels, req.n_bins),
         "mce": M.maximum_calibration_error(req.probabilities, req.labels, req.n_bins),
@@ -81,3 +86,11 @@ def score(req: ScoreRequest):
 @app.get("/v1/calibration/receipts")
 def receipts():
     return {"count": len(CHAIN), "chain_valid": CHAIN.verify(), "jsonl": CHAIN.to_jsonl()}
+
+
+@app.get("/v1/receipts/verify")
+def verify_receipts():
+    valid = CHAIN.verify()
+    if not valid:
+        raise HTTPException(status_code=503, detail="receipt chain invalid")
+    return {"count": len(CHAIN), "chain_valid": valid, "storage": "PROCESS_LOCAL"}

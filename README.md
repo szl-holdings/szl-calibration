@@ -21,14 +21,20 @@ Doctrine v11. Lambda = Conjecture 1 (advisory). Apache-2.0.
 |---|---|
 | `GET /healthz` | liveness + receipt-chain validity |
 | `GET /metrics` | Prometheus exposition (requests, latency, ECE histogram) |
-| `POST /v1/calibration/score` | ECE/MCE/Brier/log-loss/AUROC + receipt for a batch |
+| `POST /v1/score` | ECE/MCE/Brier/log-loss/AUROC + receipt for a batch |
+| `POST /v1/calibration/score` | backwards-compatible alias for the same scorer |
 | `GET /v1/calibration/receipts` | full hash-chained receipt log (JSONL) |
+| `GET /v1/receipts/verify` | chain validity; HTTP 503 if integrity fails |
+
+Invalid batches return HTTP 422 and do not append a receipt. Receipts are stored
+in memory for the current service process; restarting the process starts a new
+chain. This service does not claim persistent or shared multi-worker history.
 
 ## Run
 
 ```bash
 pip install -e '.[serve]'
-uvicorn szl_calibration.service:app --config deploy/uvicorn.conf.py
+uvicorn szl_calibration.service:app --host 127.0.0.1 --port 8080
 ```
 
 ## CI weight gate
