@@ -18,7 +18,8 @@ only after the verification steps below pass on the target machine.
 ## Prerequisites
 
 - Python 3.11 or 3.12
-- `pip install -e .` from the repository root (installs the `szl_calibration` package
+- `pip install -e '.[dev]'` from the repository root (installs test/service tools,
+  the `szl_calibration` package
   and runtime dependencies declared in `pyproject.toml`)
 
 ## Verify (do this first on any new machine)
@@ -43,6 +44,7 @@ Production settings live in `deploy/uvicorn.conf.py`. Endpoints:
 
 - `GET /healthz` — liveness
 - `POST /v1/score` — calibration metrics for probability/label arrays
+- `POST /v1/calibration/score` — compatible alias for existing clients
 - `GET /v1/receipts/verify` — hash-chain integrity check
 - `GET /metrics` — Prometheus exposition
 
@@ -54,8 +56,13 @@ Production settings live in `deploy/uvicorn.conf.py`. Endpoints:
 
 ## CI
 
-`.github/workflows/ci.yml` runs the test suite on every push. A red run blocks merge;
-treat the CI badge state as the source of truth for main.
+`.github/workflows/ci.yml` runs the test suite on main pushes and pull requests.
+Require successful checks for the proposed commit before merging. Branch
+protection is a separate repository setting; the workflow alone does not enforce it.
+
+Receipts are process-local and reset on restart. The gate proves this mathematical
+service on the observed machine, not hosted deployment, model quality, clinical
+validity, durable storage, or external Prometheus/Grafana provisioning.
 
 ## Doctrine
 
