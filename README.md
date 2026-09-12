@@ -30,6 +30,13 @@ Invalid batches return HTTP 422 and do not append a receipt. Receipts are stored
 in memory for the current service process; restarting the process starts a new
 chain. This service does not claim persistent or shared multi-worker history.
 
+Receipt payloads are detached from both caller inputs and returned receipt objects.
+Non-finite JSON values are rejected. A broken chain makes `/healthz` and both
+scoring routes return HTTP 503; no new receipt is appended. Append verifies the
+existing chain while holding its lock, so verification cost grows with history.
+The hash chain detects changes relative to retained receipts; it is unsigned and
+does not prevent a privileged writer from replacing or truncating the entire log.
+
 ## Run
 
 ```bash
