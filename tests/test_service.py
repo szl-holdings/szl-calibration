@@ -48,3 +48,13 @@ def test_verification_detects_tampered_receipt(client):
     client.post("/v1/score", json={"probabilities": [0.1, 0.9], "labels": [0, 1]})
     service.CHAIN._items[0].payload["metrics"]["ece"] = 0
     assert client.get("/v1/receipts/verify").status_code == 503
+
+
+def test_broken_chain_fails_health_and_cannot_receive_more_scores(client):
+    payload = {"probabilities": [0.1, 0.9], "labels": [0, 1]}
+    assert client.post("/v1/score", json=payload).status_code == 200
+    service.CHAIN._items[0].payload["metrics"]["ece"] = 0
+    assert client.get("/healthz").status_code == 503
+    for route in ("/v1/score", "/v1/calibration/score"):
+        assert client.post(route, json=payload).status_code == 503
+    assert len(service.CHAIN) == 1

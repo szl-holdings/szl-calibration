@@ -51,7 +51,9 @@ class ScoreRequest(BaseModel):
 
 @app.get("/healthz")
 def healthz():
-    return {"status": "ok", "version": __version__, "receipts": len(CHAIN), "chain_valid": CHAIN.verify()}
+    if not CHAIN.verify():
+        raise HTTPException(status_code=503, detail="receipt chain invalid")
+    return {"status": "ok", "version": __version__, "receipts": len(CHAIN), "chain_valid": True}
 
 
 @app.get("/metrics", response_class=PlainTextResponse)
@@ -77,8 +79,11 @@ def score(req: ScoreRequest):
         out["auroc"] = M.auroc(req.probabilities, req.labels)
     except ValueError:
         out["auroc"] = None  # single-class batch: honest null, never fabricated
+    try:
+        r = CHAIN.append("calibration.score.v1", {"model_id": req.model_id, "metrics": out})
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail="receipt chain invalid") from exc
     ECE_G.observe(out["ece"])
-    r = CHAIN.append("calibration.score.v1", {"model_id": req.model_id, "metrics": out})
     return {"metrics": out, "receipt": {"index": r.index, "hash": r.hash, "prev_hash": r.prev_hash,
                                         "signature": r.signature}}
 
