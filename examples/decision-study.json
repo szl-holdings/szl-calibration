@@ -1,0 +1,85 @@
+{
+  "model_id": "synthetic-fixture-v1",
+  "task_id": "grounded-proposal-v1",
+  "question_revision": "1c9824f502a443923d94ee6b00ba92960bf0d95c7f2da2b73e22d9f10adb5c3d",
+  "dataset_revision": "8acf75ff777a950c20a8d647528949376f6e4e8bfb86e93817b6c376db264fc2",
+  "label_kind": "SYNTHETIC",
+  "held_out": false,
+  "policy_frozen": true,
+  "classes": [
+    "review",
+    "route"
+  ],
+  "policy": {
+    "threshold": 0.95,
+    "max_error": 0.05,
+    "alpha": 0.05,
+    "min_accepted_per_group": 100,
+    "required_groups": [
+      "normal",
+      "ambiguous"
+    ],
+    "required_evidence": [
+      "source_verified"
+    ]
+  },
+  "evidence": {
+    "source_verified": "UNAVAILABLE"
+  },
+  "samples": [
+    {
+      "id": "synthetic-0",
+      "group": "normal",
+      "probabilities": {
+        "review": 0.010000000000000009,
+        "route": 0.99
+      },
+      "label": "route"
+    },
+    {
+      "id": "synthetic-1",
+      "group": "normal",
+      "probabilities": {
+        "review": 0.030000000000000027,
+        "route": 0.97
+      },
+      "label": "route"
+    },
+    {
+      "id": "synthetic-2",
+      "group": "normal",
+      "probabilities": {
+        "review": 0.020000000000000018,
+        "route": 0.98
+      },
+      "label": "review"
+    },
+    {
+      "id": "synthetic-3",
+      "group": "ambiguous",
+      "probabilities": {
+        "review": 0.49,
+        "route": 0.51
+      },
+      "label": "review"
+    },
+    {
+      "id": "synthetic-4",
+      "group": "ambiguous",
+      "probabilities": {
+        "review": 0.5,
+        "route": 0.5
+      },
+      "label": "route"
+    },
+    {
+      "id": "synthetic-5",
+      "group": "ambiguous",
+      "probabilities": {
+        "review": 0.040000000000000036,
+        "route": 0.96
+      },
+      "label": "review"
+    }
+  ]
+}

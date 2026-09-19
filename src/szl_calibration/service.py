@@ -10,11 +10,13 @@ import uuid
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import PlainTextResponse
+from starlette.concurrency import run_in_threadpool
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from pydantic import BaseModel, Field
 
 from . import __version__, metrics as M
 from .receipts import ReceiptChain
+from .decisions import assess_decisions, parse_study, MAX_STUDY_BYTES
 
 logging.basicConfig(level=logging.INFO, format='{"ts":"%(asctime)s","level":"%(levelname)s","msg":"%(message)s"}')
 log = logging.getLogger("szl.calibration")
@@ -91,6 +93,32 @@ def score(req: ScoreRequest):
 @app.get("/v1/calibration/receipts")
 def receipts():
     return {"count": len(CHAIN), "chain_valid": CHAIN.verify(), "jsonl": CHAIN.to_jsonl()}
+
+
+@app.post("/v1/decisions/assess")
+async def decisions(request: Request):
+    """Offline evaluation only: no provider call, tool execution, or publication."""
+    if not CHAIN.verify():
+        raise HTTPException(status_code=503, detail="receipt chain invalid")
+    if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "application/json":
+        raise HTTPException(status_code=415, detail="application/json required")
+    raw = bytearray()
+    async for chunk in request.stream():
+        if len(raw) + len(chunk) > MAX_STUDY_BYTES:
+            raise HTTPException(status_code=413, detail="study exceeds 8 MiB")
+        raw.extend(chunk)
+    try:
+        req = parse_study(bytes(raw))
+        result = await run_in_threadpool(assess_decisions, req)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    try:
+        receipt = CHAIN.append("decision.study.v1", result)
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail="receipt chain invalid") from exc
+    return {"assessment": result,
+            "receipt": {"index": receipt.index, "hash": receipt.hash,
+                        "prev_hash": receipt.prev_hash, "signature": receipt.signature}}
 
 
 @app.get("/v1/receipts/verify")
