@@ -54,33 +54,63 @@ def validate_safetensors(path: str, max_bytes: int = 64 * 1024**3) -> GateReport
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         rep.reasons.append(f"header not valid UTF-8 JSON: {exc}")
         return rep
+    if not isinstance(header, dict):
+        rep.reasons.append("header root must be a JSON object")
+        return rep
+
     buf = raw[8 + n:]
+    spans: list[tuple[int, int, str]] = []
     for name, meta in header.items():
         if name == "__metadata__":
             continue
+        if not isinstance(meta, dict):
+            rep.reasons.append(f"{name}: tensor metadata must be an object")
+            return rep
         dt = meta.get("dtype")
-        shape = meta.get("shape") or []
+        shape = meta.get("shape")
         offs = meta.get("data_offsets")
         if dt not in DTYPE_SIZE:
             rep.reasons.append(f"{name}: unsupported dtype {dt!r}")
             return rep
-        if not (isinstance(offs, list) and len(offs) == 2 and offs[0] <= offs[1] <= len(buf)):
+        if not isinstance(shape, list):
+            rep.reasons.append(f"{name}: shape must be a list")
+            return rep
+        if not (
+            isinstance(offs, list)
+            and len(offs) == 2
+            and all(isinstance(v, int) and not isinstance(v, bool) for v in offs)
+            and 0 <= offs[0] <= offs[1] <= len(buf)
+        ):
             rep.reasons.append(f"{name}: data_offsets {offs!r} outside buffer {len(buf)}")
             return rep
         count = 1
         for d in shape:
-            if not isinstance(d, int) or d < 0:
+            if not isinstance(d, int) or isinstance(d, bool) or d < 0:
                 rep.reasons.append(f"{name}: invalid shape {shape!r}")
                 return rep
             count *= d
         if count * DTYPE_SIZE[dt] != offs[1] - offs[0]:
             rep.reasons.append(f"{name}: shape*dtype size != byte span")
             return rep
+        spans.append((offs[0], offs[1], name))
         rep.tensors += 1
         rep.parameters += count
     if rep.tensors == 0:
         rep.reasons.append("no tensors in header")
         return rep
+
+    cursor = 0
+    for start, end, name in sorted(spans):
+        if start != cursor:
+            rep.reasons.append(
+                f"{name}: data span starts at {start}, expected contiguous offset {cursor}"
+            )
+            return rep
+        cursor = end
+    if cursor != len(buf):
+        rep.reasons.append(f"tensor data covers {cursor} bytes, buffer has {len(buf)}")
+        return rep
+
     try:
         import numpy as np
     except ImportError:
