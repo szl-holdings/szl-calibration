@@ -1,0 +1,25 @@
+{
+  "model": "jev-1.13.0",
+  "state": {
+    "kind": "synthetic integration example",
+    "build": {
+      "tests": "passed",
+      "deployment": "not_observed"
+    }
+  },
+  "questions": {
+    "deployment_observed": {
+      "type": "noul",
+      "instructions": "Does this state establish that a live deployment has been observed? Treat not_observed as no."
+    },
+    "next_step": {
+      "type": "choice",
+      "instructions": "Choose the next verification step warranted by this state.",
+      "criteria": {
+        "verify deployment": "Collect live deployment evidence.",
+        "claim production ready": "Treat this build as production ready.",
+        "skip verification": "No further checks needed."
+      }
+    }
+  }
+}

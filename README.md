@@ -25,6 +25,7 @@ Doctrine v11. Lambda = Conjecture 1 (advisory). Apache-2.0.
 | `POST /v1/calibration/score` | backwards-compatible alias for the same scorer |
 | `GET /v1/calibration/receipts` | full hash-chained receipt log (JSONL) |
 | `GET /v1/receipts/verify` | chain validity; HTTP 503 if integrity fails |
+| `POST /v1/decisions/assess` | source-bound offline decision study, per-group risk and abstention; no execution authorization |
 
 Invalid batches return HTTP 422 and do not append a receipt. Receipts are stored
 in memory for the current service process; restarting the process starts a new
@@ -42,6 +43,23 @@ does not prevent a privileged writer from replacing or truncating the entire log
 ```bash
 pip install -e '.[serve]'
 uvicorn szl_calibration.service:app --host 127.0.0.1 --port 8080
+```
+
+## Typed decisions and optional Jev integration
+
+[Decision studies](docs/DECISION_STUDIES.md) reuse the existing calibration metrics
+for labeled multiclass predictions, bind the exact cohort and frozen policy in an
+unsigned receipt, and measure selective error for every declared cohort. Missing
+evidence and small samples remain `REVIEW`; failed prerequisites remain `BLOCK`.
+The highest result is `ELIGIBLE_FOR_SHADOW`, never deployment or action authority.
+
+The optional [Jev adapter](docs/JEV_ADAPTER.md) uses the documented TypeSafe API with
+an explicit model version, strict response validation and a bounded request. It
+does not change the service into a provider proxy. The included synthetic example
+can be assessed offline without a key:
+
+```bash
+python -m szl_calibration.decision_cli examples/decision-study.json
 ```
 
 ## CI weight gate
