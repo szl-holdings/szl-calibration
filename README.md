@@ -1,6 +1,6 @@
 # szl-calibration
 
-[![PyPI](https://img.shields.io/pypi/v/szl-calibration)](https://pypi.org/project/szl-calibration/) [![Python](https://img.shields.io/pypi/pyversions/szl-calibration)](https://pypi.org/project/szl-calibration/)
+[![PyPI](https://img.shields.io/pypi/v/szl-calibration)](https://pypi.org/project/szl-calibration/) [![Python](https://img.shields.io/pypi/pyversions/szl-calibration)](https://pypi.org/project/szl-calibration/) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/szl-holdings/szl-calibration/badge)](https://scorecard.dev/viewer/?uri=github.com/szl-holdings/szl-calibration)
 
 **Calibration Intelligence Plane** — the bridge between the SZL formula corpus, governed
 runtime, and observability. Exact calibration math on caller-supplied probabilities,
