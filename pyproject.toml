@@ -15,5 +15,14 @@ dependencies = ["numpy>=1.24"]
 serve = ["fastapi>=0.110", "uvicorn>=0.29", "prometheus-client>=0.20"]
 dev = ["pytest>=8.0", "fastapi>=0.110", "uvicorn>=0.29", "prometheus-client>=0.20", "httpx>=0.27"]
 
+[project.urls]
+Homepage = "https://github.com/szl-holdings/szl-calibration"
+Source = "https://github.com/szl-holdings/szl-calibration"
+Issues = "https://github.com/szl-holdings/szl-calibration/issues"
+Changelog = "https://github.com/szl-holdings/szl-calibration/releases"
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.szl.release]
+import_names = ["szl_calibration"] # wheel top-level import names; the release gate fails if the built wheel differs
