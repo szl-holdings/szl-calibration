@@ -1,5 +1,7 @@
 # szl-calibration
 
+[![PyPI](https://img.shields.io/pypi/v/szl-calibration)](https://pypi.org/project/szl-calibration/) [![Python](https://img.shields.io/pypi/pyversions/szl-calibration)](https://pypi.org/project/szl-calibration/)
+
 **Calibration Intelligence Plane** — the bridge between the SZL formula corpus, governed
 runtime, and observability. Exact calibration math on caller-supplied probabilities,
 every scored batch receipted, Prometheus-native surface, fail-closed weight gates in CI.
