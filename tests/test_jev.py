@@ -64,6 +64,17 @@ def test_all_primitives_valid_and_detached():
     assert result["answers"]["yes"]["noul"] == .9
 
 
+@pytest.mark.parametrize("count,valid", [(1, False), (2, True), (10, True), (11, False), (255, False)])
+def test_score_rubric_matches_documented_api_limit(count, valid):
+    req = request()
+    req["questions"]["grade"]["criteria"] = [str(i) for i in range(count)]
+    if valid:
+        assert len(jev.validate_request(req)["questions"]["grade"]["criteria"]) == count
+    else:
+        with pytest.raises(jev.JevError, match="invalid_score_criteria"):
+            jev.validate_request(req)
+
+
 @pytest.mark.parametrize("model", ["jev-latest", "jev-preview", "jev-1.13.0 ", "http://evil.test", None])
 def test_moving_or_invalid_models_rejected(model):
     req = request()

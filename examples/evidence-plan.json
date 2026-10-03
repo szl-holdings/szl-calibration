@@ -1,0 +1,96 @@
+{
+  "schema": "szl.evidence.plan.request.v1",
+  "probability_basis": "MODELED",
+  "budget_units": 1,
+  "study": {
+    "model_id": "sample-classifier-v1",
+    "task_id": "sample-release-triage-v1",
+    "question_revision": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "dataset_revision": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "label_kind": "SYNTHETIC",
+    "held_out": false,
+    "policy_frozen": true,
+    "classes": [
+      "review",
+      "route"
+    ],
+    "policy": {
+      "threshold": 0.95,
+      "max_error": 0.5,
+      "alpha": 0.05,
+      "min_accepted_per_group": 1,
+      "required_groups": [
+        "sample"
+      ],
+      "required_evidence": [
+        "source",
+        "runtime"
+      ]
+    },
+    "evidence": {
+      "source": "UNAVAILABLE",
+      "runtime": "UNAVAILABLE"
+    },
+    "samples": [
+      {
+        "id": "sample-1",
+        "group": "sample",
+        "probabilities": {
+          "review": 0.04,
+          "route": 0.96
+        },
+        "label": "route"
+      }
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "both-pass",
+      "probability": 0.45,
+      "evidence": {
+        "source": "PASS",
+        "runtime": "PASS"
+      }
+    },
+    {
+      "id": "runtime-fails",
+      "probability": 0.45,
+      "evidence": {
+        "source": "PASS",
+        "runtime": "FAIL"
+      }
+    },
+    {
+      "id": "source-fails",
+      "probability": 0.05,
+      "evidence": {
+        "source": "FAIL",
+        "runtime": "PASS"
+      }
+    },
+    {
+      "id": "both-fail",
+      "probability": 0.05,
+      "evidence": {
+        "source": "FAIL",
+        "runtime": "FAIL"
+      }
+    }
+  ],
+  "actions": [
+    {
+      "id": "check-source",
+      "evidence": "source",
+      "cost_units": 1,
+      "requires_pass": [],
+      "unavailable_probability": 0
+    },
+    {
+      "id": "check-runtime",
+      "evidence": "runtime",
+      "cost_units": 1,
+      "requires_pass": [],
+      "unavailable_probability": 0
+    }
+  ]
+}
