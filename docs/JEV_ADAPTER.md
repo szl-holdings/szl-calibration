@@ -3,7 +3,7 @@
 This is an original bounded client for the [documented TypeSafe HTTP API](https://docs.typesafe.ai/api).
 It adds an optional provider interface to SZL software; it does not implement Jev's
 proprietary model or RLCD training. No vendor SDK or remote agent skill is executed
-or installed by this module. Source references were checked on 19 September 2026.
+or installed by this module. Source references were rechecked on 3 October 2026.
 
 ## Run
 
@@ -30,7 +30,7 @@ validation or a schema-valid provider result; neither implies empirical accuracy
 
 The initial version supports nonempty string instructions, Noul criteria with
 `true`/`false` descriptions, Choice maps with 2–255 named options, and ordered Score
-arrays with 2–255 levels. This is deliberately a subset of the vendor's broader
+arrays with 2–10 levels, matching the documented API limit. This is deliberately a subset of the vendor's broader
 SDK schema. Requests have 1–128 questions and at most 256 KiB of JSON; this byte
 limit is not a token-count guarantee. The provider's own token limits still apply.
 

@@ -28,6 +28,7 @@ Doctrine v11. Lambda = Conjecture 1 (advisory). Apache-2.0.
 | `GET /v1/calibration/receipts` | full hash-chained receipt log (JSONL) |
 | `GET /v1/receipts/verify` | chain validity; HTTP 503 if integrity fails |
 | `POST /v1/decisions/assess` | source-bound offline decision study, per-group risk and abstention; no execution authorization |
+| `POST /v1/evidence/plan` | rank missing evidence acquisitions under a budget using explicitly MODELED joint scenarios; proposal only |
 
 Invalid batches return HTTP 422 and do not append a receipt. Receipts are stored
 in memory for the current service process; restarting the process starts a new
@@ -63,6 +64,21 @@ can be assessed offline without a key:
 ```bash
 python -m szl_calibration.decision_cli examples/decision-study.json
 ```
+
+The [evidence acquisition planner](docs/EVIDENCE_PLANNER.md) chooses one affordable
+next observation using expected final-verdict entropy reduction per cost. Joint
+scenarios retain caller-declared correlations; unavailable observations preserve
+uncertainty. Existing failed evidence blocks proposals, and prerequisites must be
+present before an acquisition is eligible. All probabilities remain **MODELED**;
+the calculation never collects evidence, spends the budget, or authorizes action.
+
+```bash
+python -m szl_calibration.evidence_cli examples/evidence-plan.json
+```
+
+This command completes without a provider key. Exit zero means the planning
+calculation completed; inspect the proposal and actual current assessment before
+deciding what separately governed observation to collect.
 
 ## CI weight gate
 

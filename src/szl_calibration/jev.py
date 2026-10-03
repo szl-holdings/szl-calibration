@@ -132,7 +132,7 @@ def validate_request(request: Any) -> dict[str, Any]:
                     _text(value)
         elif kind == "score":
             criteria = question.get("criteria")
-            if type(criteria) is not list or not 2 <= len(criteria) <= 255:
+            if type(criteria) is not list or not 2 <= len(criteria) <= 10:
                 _fail("invalid_score_criteria")
             for value in criteria:
                 _text(value)

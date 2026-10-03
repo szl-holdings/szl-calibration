@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 from . import __version__, metrics as M
 from .receipts import ReceiptChain
 from .decisions import assess_decisions, parse_study, MAX_STUDY_BYTES
+from .evidence_planner import plan_evidence, parse_plan, MAX_PLAN_BYTES
 
 logging.basicConfig(level=logging.INFO, format='{"ts":"%(asctime)s","level":"%(levelname)s","msg":"%(message)s"}')
 log = logging.getLogger("szl.calibration")
@@ -127,3 +128,29 @@ def verify_receipts():
     if not valid:
         raise HTTPException(status_code=503, detail="receipt chain invalid")
     return {"count": len(CHAIN), "chain_valid": valid, "storage": "PROCESS_LOCAL"}
+
+
+@app.post("/v1/evidence/plan")
+async def evidence_plan(request: Request):
+    """Calculate a proposal using MODELED outcomes; never collect or apply evidence."""
+    if not CHAIN.verify():
+        raise HTTPException(status_code=503, detail="receipt chain invalid")
+    if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "application/json":
+        raise HTTPException(status_code=415, detail="application/json required")
+    raw = bytearray()
+    async for chunk in request.stream():
+        if len(raw) + len(chunk) > MAX_PLAN_BYTES:
+            raise HTTPException(status_code=413, detail="plan exceeds byte limit")
+        raw.extend(chunk)
+    try:
+        result = await run_in_threadpool(plan_evidence, parse_plan(bytes(raw)))
+    except (TypeError, ValueError):
+        # Do not echo untrusted request data through exception strings.
+        raise HTTPException(status_code=422, detail="invalid evidence plan") from None
+    try:
+        receipt = CHAIN.append("evidence.plan.v1", result)
+    except ValueError:
+        raise HTTPException(status_code=503, detail="receipt chain invalid") from None
+    return {"plan": result,
+            "receipt": {"index": receipt.index, "hash": receipt.hash,
+                        "prev_hash": receipt.prev_hash, "signature": receipt.signature}}
