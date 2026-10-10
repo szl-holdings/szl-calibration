@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 from . import __version__, metrics as M
 from .receipts import ReceiptChain
 from .decisions import assess_decisions, parse_study, MAX_STUDY_BYTES
+from .local_decision import answer_local_question, parse_local_decision, MAX_LOCAL_BYTES
 from .evidence_planner import plan_evidence, parse_plan, MAX_PLAN_BYTES
 
 logging.basicConfig(level=logging.INFO, format='{"ts":"%(asctime)s","level":"%(levelname)s","msg":"%(message)s"}')
@@ -128,6 +129,31 @@ def verify_receipts():
     if not valid:
         raise HTTPException(status_code=503, detail="receipt chain invalid")
     return {"count": len(CHAIN), "chain_valid": valid, "storage": "PROCESS_LOCAL"}
+
+
+@app.post("/v1/decisions/local")
+async def local_decision(request: Request):
+    """Type a caller-supplied distribution. No provider call and no execution."""
+    if not CHAIN.verify():
+        raise HTTPException(status_code=503, detail="receipt chain invalid")
+    if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() != "application/json":
+        raise HTTPException(status_code=415, detail="application/json required")
+    raw = bytearray()
+    async for chunk in request.stream():
+        if len(raw) + len(chunk) > MAX_LOCAL_BYTES:
+            raise HTTPException(status_code=413, detail="local decision exceeds 1 MiB")
+        raw.extend(chunk)
+    try:
+        result = await run_in_threadpool(answer_local_question, parse_local_decision(bytes(raw)))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=422, detail="invalid local decision") from None
+    try:
+        receipt = CHAIN.append("local.decision.v1", result)
+    except ValueError:
+        raise HTTPException(status_code=503, detail="receipt chain invalid") from None
+    return {"answer": result,
+            "receipt": {"index": receipt.index, "hash": receipt.hash,
+                        "prev_hash": receipt.prev_hash, "signature": receipt.signature}}
 
 
 @app.post("/v1/evidence/plan")

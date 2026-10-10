@@ -12,6 +12,13 @@ control equipment, or make a consequential decision. Every result includes
 tenant isolation and deployment request-size limits must be supplied before
 exposing this existing service beyond a trusted operator environment.
 
+`POST /v1/decisions/local` is the single-question companion. It types a
+caller-supplied probability table as a predicate, a choice, or an ordered
+score. The only admitted backend name is `recording-table`. A tie, blank
+evidence, or any other backend is a refusal. The route does not call a model,
+and `execution_authorized` stays false. A study of many labeled rows remains
+`/v1/decisions/assess`.
+
 ## Run the included synthetic example
 
 ```bash

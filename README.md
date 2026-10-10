@@ -28,6 +28,7 @@ Doctrine v11. Lambda = Conjecture 1 (advisory). Apache-2.0.
 | `GET /v1/calibration/receipts` | full hash-chained receipt log (JSONL) |
 | `GET /v1/receipts/verify` | chain validity; HTTP 503 if integrity fails |
 | `POST /v1/decisions/assess` | source-bound offline decision study, per-group risk and abstention; no execution authorization |
+| `POST /v1/decisions/local` | type one predicate, choice, or score from a caller-supplied recording table; no model call and no execution authorization |
 | `POST /v1/evidence/plan` | rank missing evidence acquisitions under a budget using explicitly MODELED joint scenarios; proposal only |
 
 Invalid batches return HTTP 422 and do not append a receipt. Receipts are stored
