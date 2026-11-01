@@ -39,8 +39,13 @@ async def observe(request: Request, call_next):
     start = time.perf_counter()
     resp = await call_next(request)
     dt = time.perf_counter() - start
-    REQS.labels(request.url.path, resp.status_code).inc()
-    LAT.labels(request.url.path).observe(dt)
+    # Route templates are server-owned; unmatched caller paths share one label.
+    route = request.scope.get("route")
+    route_label = getattr(route, "path", None)
+    if not isinstance(route_label, str) or not route_label:
+        route_label = "__unmatched__"
+    REQS.labels(route_label, resp.status_code).inc()
+    LAT.labels(route_label).observe(dt)
     log.info('{"rid":"%s","path":"%s","status":%d,"seconds":%.6f}', rid, request.url.path, resp.status_code, dt)
     resp.headers["x-request-id"] = rid
     return resp
@@ -180,3 +185,4 @@ async def evidence_plan(request: Request):
     return {"plan": result,
             "receipt": {"index": receipt.index, "hash": receipt.hash,
                         "prev_hash": receipt.prev_hash, "signature": receipt.signature}}
+

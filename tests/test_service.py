@@ -58,3 +58,30 @@ def test_broken_chain_fails_health_and_cannot_receive_more_scores(client):
     for route in ("/v1/score", "/v1/calibration/score"):
         assert client.post(route, json=payload).status_code == 503
     assert len(service.CHAIN) == 1
+
+
+def test_metric_labels_use_templates_and_one_unmatched_bucket(client, monkeypatch):
+    class Recorder:
+        def __init__(self):
+            self.seen = set()
+
+        def labels(self, *labels):
+            self.seen.add(labels)
+            return self
+
+        def inc(self):
+            pass
+
+        def observe(self, value):
+            pass
+
+    requests, latency = Recorder(), Recorder()
+    monkeypatch.setattr(service, "REQS", requests)
+    monkeypatch.setattr(service, "LAT", latency)
+    for index in range(100):
+        assert client.get(f"/unknown-{index}").status_code == 404
+    assert requests.seen == {("__unmatched__", 404)}
+    assert latency.seen == {("__unmatched__",)}
+    assert client.get("/healthz").status_code == 200
+    assert ("/healthz", 200) in requests.seen
+    assert ("/healthz",) in latency.seen
