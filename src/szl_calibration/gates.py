@@ -7,6 +7,7 @@ BLOCK  = any structural violation. Structure failures are never waived.
 from __future__ import annotations
 
 import json
+import math
 import struct
 from dataclasses import dataclass, field
 
@@ -28,6 +29,13 @@ def _unique_object(pairs):
 
 def _reject_constant(value):
     raise ValueError("non-JSON numeric constant")
+
+
+def _finite_float(value):
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError("header number must be finite")
+    return number
 
 
 @dataclass
@@ -75,7 +83,8 @@ def validate_safetensors(path: str, max_bytes: int = 64 * 1024**3) -> GateReport
     try:
         header = json.loads(raw[8:8 + n].decode("utf-8"),
                             object_pairs_hook=_unique_object,
-                            parse_constant=_reject_constant)
+                            parse_constant=_reject_constant,
+                            parse_float=_finite_float)
     except (UnicodeDecodeError, ValueError, RecursionError) as exc:
         rep.reasons.append(f"header not valid UTF-8 JSON: {exc}")
         return rep
