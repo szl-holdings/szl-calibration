@@ -27,11 +27,18 @@ def brier_score(probs: list[float], labels: list[int]) -> float:
 
 
 def log_loss(probs: list[float], labels: list[int], eps: float = 1e-15) -> float:
+    """Clip observed-class probability to [eps, 1 - eps], with 0 < eps <= 0.5."""
     _validate(probs, labels)
+    if not isinstance(eps, (int, float)) or not 0.0 < eps <= 0.5:
+        raise ValueError("eps must be a finite number in (0, 0.5]")
     total = 0.0
     for p, y in zip(probs, labels):
-        p = min(max(p, eps), 1.0 - eps)
-        total += y * math.log(p) + (1 - y) * math.log(1 - p)
+        # Clip directly in the observed class. For tiny eps, 1 - eps rounds
+        # to 1; subtracting again would lose eps and evaluating log(0) fails
+        # even if its multiplier in the two-term formula would have been zero.
+        observed_probability = p if y == 1 else 1.0 - p
+        clipped_probability = min(max(observed_probability, eps), 1.0 - eps)
+        total += math.log(clipped_probability)
     return -total / len(probs)
 
 
