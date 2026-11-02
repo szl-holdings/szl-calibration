@@ -105,6 +105,13 @@ Exit codes: ALLOW 0 / BLOCK 1 / REVIEW 2 / expectation mismatch 3. Structure (he
 framing, dtype/shape/offset consistency) is validated stdlib-only; NaN/Inf scanning uses
 numpy when present and honestly degrades to REVIEW otherwise.
 
+The input byte limit is enforced during reading (at most `max_bytes + 1` bytes,
+including the overflow-detection byte). Invalid limits, duplicate header keys,
+non-JSON numeric constants, malformed dtypes and non-string metadata return
+BLOCK. The supported dtype set is unchanged. This is a local structural and
+numeric check; it does not establish model safety or provenance. Files within
+the configured limit are still held in memory, so set that limit to fit the host.
+
 ## Alerts
 
 `deploy/grafana-alerts.yaml` ships p95-latency, ECE-drift, chain-broken (critical,

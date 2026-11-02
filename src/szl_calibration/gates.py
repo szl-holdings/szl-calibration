@@ -17,6 +17,19 @@ FLOAT_DTYPES = {"F64", "F32", "F16", "BF16"}
 ALLOW, REVIEW, BLOCK = "ALLOW", "REVIEW", "BLOCK"
 
 
+def _unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate header key")
+        result[key] = value
+    return result
+
+
+def _reject_constant(value):
+    raise ValueError("non-JSON numeric constant")
+
+
 @dataclass
 class GateReport:
     verdict: str
@@ -33,9 +46,19 @@ class GateReport:
 
 def validate_safetensors(path: str, max_bytes: int = 64 * 1024**3) -> GateReport:
     rep = GateReport(verdict=BLOCK)
+    if type(max_bytes) is not int or max_bytes < 0:
+        rep.reasons.append("max_bytes must be a nonnegative integer")
+        return rep
     try:
         with open(path, "rb") as fh:
-            raw = fh.read()
+            # Enforce admission while reading, including a single overflow byte.
+            # Small chunks avoid allocating the whole configured limit up front.
+            raw = bytearray()
+            while len(raw) <= max_bytes:
+                chunk = fh.read(min(1024 * 1024, max_bytes - len(raw) + 1))
+                if not chunk:
+                    break
+                raw.extend(chunk)
     except OSError as exc:
         rep.reasons.append(f"unreadable: {exc}")
         return rep
@@ -50,8 +73,10 @@ def validate_safetensors(path: str, max_bytes: int = 64 * 1024**3) -> GateReport
         rep.reasons.append(f"header length {n} inconsistent with file size {len(raw)}")
         return rep
     try:
-        header = json.loads(raw[8:8 + n].decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        header = json.loads(raw[8:8 + n].decode("utf-8"),
+                            object_pairs_hook=_unique_object,
+                            parse_constant=_reject_constant)
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
         rep.reasons.append(f"header not valid UTF-8 JSON: {exc}")
         return rep
     if not isinstance(header, dict):
@@ -62,6 +87,9 @@ def validate_safetensors(path: str, max_bytes: int = 64 * 1024**3) -> GateReport
     spans: list[tuple[int, int, str]] = []
     for name, meta in header.items():
         if name == "__metadata__":
+            if not isinstance(meta, dict) or any(not isinstance(v, str) for v in meta.values()):
+                rep.reasons.append("__metadata__ must be a string-to-string map")
+                return rep
             continue
         if not isinstance(meta, dict):
             rep.reasons.append(f"{name}: tensor metadata must be an object")
@@ -69,7 +97,7 @@ def validate_safetensors(path: str, max_bytes: int = 64 * 1024**3) -> GateReport
         dt = meta.get("dtype")
         shape = meta.get("shape")
         offs = meta.get("data_offsets")
-        if dt not in DTYPE_SIZE:
+        if not isinstance(dt, str) or dt not in DTYPE_SIZE:
             rep.reasons.append(f"{name}: unsupported dtype {dt!r}")
             return rep
         if not isinstance(shape, list):
