@@ -116,3 +116,9 @@ the configured limit are still held in memory, so set that limit to fit the host
 
 `deploy/grafana-alerts.yaml` ships p95-latency, ECE-drift, chain-broken (critical,
 fail-closed), and memory alerts as a PrometheusRule-compatible manifest.
+
+Estate on Hugging Face: models, datasets and Spaces are published under the [SZLHOLDINGS](https://huggingface.co/SZLHOLDINGS) org.
+
+## License
+
+Apache-2.0 — see [LICENSE](LICENSE).
