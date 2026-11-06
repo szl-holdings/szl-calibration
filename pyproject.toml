@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "szl-calibration"
-version = "0.1.1"
+version = "0.1.2"
 description = "SZL Calibration Intelligence Plane - exact calibration metrics, UNSIGNED_HONEST receipt chain, fail-closed weight gates, FastAPI + Prometheus surface."
 readme = "README.md"
 license = {text = "Apache-2.0"}
