@@ -52,3 +52,27 @@ def test_validate_rejects_nan_and_empty():
         M.brier_score([float("nan")], [1])
     with pytest.raises(ValueError):
         M.brier_score([], [])
+
+@pytest.mark.parametrize("probs,labels", [
+    ([True], [1]),
+    ([False], [0]),
+    (["0.9"], [1]),
+    ([0.9], [True]),
+    ([0.9], [1.0]),
+    ([float("nan")], [1]),
+    ([float("inf")], [1]),
+])
+def test_ambiguous_numeric_types_are_not_calibration_evidence(probs, labels):
+    with pytest.raises(ValueError):
+        M.expected_calibration_error(probs, labels)
+
+
+@pytest.mark.parametrize("bins", [True, False, 1.0, 2.5, "10", None, 0, 1001])
+def test_library_bin_count_must_be_bounded_integer(bins):
+    with pytest.raises(ValueError):
+        M.reliability_bins([0.2, 0.8], [0, 1], bins)
+
+
+def test_exact_binary_numeric_literals_remain_supported():
+    assert M.brier_score([0, 1], [0, 1]) == 0.0
+    assert sum(b.count for b in M.reliability_bins([0.0, 1.0], [0, 1], 1000)) == 2

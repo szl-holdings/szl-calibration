@@ -44,7 +44,13 @@ Doctrine v11. Lambda = Conjecture 1 (advisory). Apache-2.0.
 | `POST /v1/decisions/local` | type one predicate, choice, or score from a caller-supplied recording table; no model call and no execution authorization |
 | `POST /v1/evidence/plan` | rank missing evidence acquisitions under a budget using explicitly MODELED joint scenarios; proposal only |
 
-Invalid batches return HTTP 422 and do not append a receipt. Receipts are stored
+Invalid batches return HTTP 422 and do not append a receipt. The score boundary
+rejects coerced numeric strings, JSON booleans as probabilities/labels/bin counts,
+and fractional bin counts; integer probabilities 0/1 remain valid. Pure metric
+callers share the explicit 1–1000 integer bin bound. These are input-admission
+controls, not statistical calibration guarantees.
+
+Receipts are stored
 in memory for the current service process; restarting the process starts a new
 chain. This service does not claim persistent or shared multi-worker history.
 
