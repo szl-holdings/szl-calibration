@@ -14,11 +14,13 @@ def _validate(probs: list[float], labels: list[int]) -> None:
     if not probs:
         raise ValueError("empty input is REVIEW, not a score")
     for p in probs:
-        if not (0.0 <= p <= 1.0) or math.isnan(p):
-            raise ValueError(f"probability out of [0,1]: {p!r}")
+        # Reject booleans (bool subclasses int) and coercible strings instead
+        # of turning an untrusted evidence row into a legitimate score.
+        if type(p) not in (int, float) or not 0.0 <= p <= 1.0 or not math.isfinite(p):
+            raise ValueError("probability must be a finite numeric value in [0,1]")
     for y in labels:
-        if y not in (0, 1):
-            raise ValueError(f"label must be 0 or 1: {y!r}")
+        if type(y) is not int or y not in (0, 1):
+            raise ValueError("label must be the integer 0 or 1")
 
 
 def brier_score(probs: list[float], labels: list[int]) -> float:
@@ -53,8 +55,10 @@ class Bin:
 
 def reliability_bins(probs: list[float], labels: list[int], n_bins: int = 10) -> list[Bin]:
     _validate(probs, labels)
-    if n_bins < 1:
-        raise ValueError("n_bins must be >= 1")
+    # Align the library boundary with the HTTP 1..1000 admission ceiling:
+    # never allocate unbounded buckets or accept bool/float as a bin count.
+    if type(n_bins) is not int or not 1 <= n_bins <= 1000:
+        raise ValueError("n_bins must be an integer in [1,1000]")
     buckets: list[list[tuple[float, int]]] = [[] for _ in range(n_bins)]
     for p, y in zip(probs, labels):
         i = min(int(p * n_bins), n_bins - 1)

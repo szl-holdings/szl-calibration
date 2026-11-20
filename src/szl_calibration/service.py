@@ -12,7 +12,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import PlainTextResponse
 from starlette.concurrency import run_in_threadpool
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 from . import __version__, metrics as M
 from .receipts import ReceiptChain
@@ -56,6 +56,29 @@ class ScoreRequest(BaseModel):
     labels: list[int] = Field(min_length=1)
     n_bins: int = Field(default=10, ge=1, le=1000)
     model_id: str | None = None
+
+    # Pydantic normally coerces True to 1.0, 1.0 to 1, and "10" to 10.
+    # Reject these at the raw JSON boundary before they become scored evidence.
+    @validator("probabilities", pre=True)
+    def strict_probability_literals(cls, values):
+        if type(values) is not list or any(
+            type(v) not in (int, float) or not 0.0 <= v <= 1.0
+            for v in values
+        ):
+            raise ValueError("probabilities require numeric JSON values in [0,1]")
+        return values
+
+    @validator("labels", pre=True)
+    def strict_binary_labels(cls, values):
+        if type(values) is not list or any(type(v) is not int or v not in (0, 1) for v in values):
+            raise ValueError("labels require JSON integers 0 or 1")
+        return values
+
+    @validator("n_bins", pre=True)
+    def strict_bin_count(cls, value):
+        if type(value) is not int:
+            raise ValueError("n_bins requires a JSON integer")
+        return value
 
 
 @app.get("/healthz")

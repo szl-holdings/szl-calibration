@@ -85,3 +85,25 @@ def test_metric_labels_use_templates_and_one_unmatched_bucket(client, monkeypatc
     assert client.get("/healthz").status_code == 200
     assert ("/healthz", 200) in requests.seen
     assert ("/healthz",) in latency.seen
+
+@pytest.mark.parametrize("body", [
+    {"probabilities": [True], "labels": [1]},
+    {"probabilities": [False], "labels": [0]},
+    {"probabilities": ["0.9"], "labels": [1]},
+    {"probabilities": [0.9], "labels": [True]},
+    {"probabilities": [0.9], "labels": [1.0]},
+    {"probabilities": [0.9], "labels": [1], "n_bins": True},
+    {"probabilities": [0.9], "labels": [1], "n_bins": 10.0},
+    {"probabilities": [0.9], "labels": [1], "n_bins": "10"},
+])
+def test_coerced_json_inputs_fail_closed_without_receipt(client, body):
+    for route in ("/v1/score", "/v1/calibration/score"):
+        assert client.post(route, json=body).status_code == 422
+        assert len(service.CHAIN) == 0
+
+
+def test_integer_probability_literals_remain_valid(client):
+    response = client.post("/v1/score", json={"probabilities": [0, 1], "labels": [0, 1]})
+    assert response.status_code == 200
+    assert response.json()["metrics"]["brier"] == 0.0
+    assert len(service.CHAIN) == 1
